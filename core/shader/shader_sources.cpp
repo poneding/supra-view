@@ -53,7 +53,10 @@ cbuffer DownsampleConstants : register(b0) {
   float2 gInvSourceSize;
   float2 gTargetSize;
   float gFilterMode;
-  float3 gPadding;
+  float2 gMaskTopLeft;
+  float2 gMaskBottomRight;
+  float gMaskEnabled;
+  float2 gPadding;
 };
 
 Texture2D gSourceTexture : register(t0);
@@ -102,6 +105,12 @@ float4 BicubicSample(float2 uv) {
 }
 
 float4 BicubicPS(VSOutput input) : SV_Target {
+  if (gMaskEnabled > 0.5 &&
+      input.uv.x >= gMaskTopLeft.x && input.uv.x <= gMaskBottomRight.x &&
+      input.uv.y >= gMaskTopLeft.y && input.uv.y <= gMaskBottomRight.y) {
+    return float4(0.02, 0.02, 0.02, 1.0);
+  }
+
   // gFilterMode keeps the constant buffer Lanczos-ready.
   return BicubicSample(input.uv);
 }

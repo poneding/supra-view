@@ -4,6 +4,7 @@
 #ifdef _WIN32
 
 #include <windows.h>
+#include <cstdint>
 
 int WINAPI wWinMain(HINSTANCE, HINSTANCE, PWSTR, int) {
   if (FAILED(CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED))) {
