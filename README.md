@@ -57,6 +57,7 @@ Desktop Duplication requires `IDXGIOutput1::DuplicateOutput` to receive a device
 - No HDR-specific handling
 - No input forwarding or remote control features
 - Lanczos is interface-ready but currently falls back to bicubic with a debug log
+- On a single monitor, the application masks its own window region in the processed output to avoid recursive hall-of-mirrors nesting
 
 ## Repository Layout
 
@@ -158,6 +159,7 @@ Expected first-run behavior:
 - The captured frame is copied into a GPU-owned texture.
 - The bicubic shader downsamples the source to the current output size.
 - The processed image is presented into the window.
+- On a single monitor, the application window area appears as a dark masked region instead of recursively capturing itself.
 
 ## Troubleshooting
 
