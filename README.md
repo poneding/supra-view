@@ -92,12 +92,53 @@ docs/
 
 ## Build Instructions
 
+Preferred scripted workflow:
+
+```powershell
+.\scripts\build.ps1
+```
+
+If you prefer Command Prompt or double-click-friendly wrappers:
+
+```bat
+scripts\build.bat
+```
+
+Useful options:
+
+```powershell
+.\scripts\build.ps1 -Configuration Debug
+.\scripts\build.ps1 -BuildDir build-debug -Configuration Debug
+```
+
+Manual CMake workflow:
+
 ```powershell
 cmake -S . -B build -G "Visual Studio 17 2022" -A x64
 cmake --build build --config Release
 ```
 
 ## Run Instructions
+
+Preferred scripted workflow:
+
+```powershell
+.\scripts\run.ps1
+```
+
+If you prefer Command Prompt or batch wrappers:
+
+```bat
+scripts\run.bat
+```
+
+To run a different build configuration:
+
+```powershell
+.\scripts\run.ps1 -Configuration Debug
+```
+
+Manual launch:
 
 ```powershell
 build\Release\supra_view.exe
@@ -123,6 +164,13 @@ Expected first-run behavior:
   - Check that the output index exists on the selected adapter.
 - Build fails on a non-Windows host
   - This is expected. The CMake project intentionally stops outside Windows because the runtime depends on Win32 and DirectX 11.
+- `scripts\build.ps1` says CMake was not found
+  - Install Visual Studio C++ tools with CMake support, or install CMake separately and ensure `cmake.exe` is on `PATH`.
+- PowerShell blocks the script
+  - Start PowerShell with a policy that allows local scripts for your user, for example:
+    `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned`
+- `build.bat` or `run.bat` fails immediately
+  - The batch wrappers forward to PowerShell. Ensure `powershell.exe` is available and that your Windows installation has not disabled it.
 
 ## Future Work
 
