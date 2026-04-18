@@ -26,6 +26,7 @@ bool AppController::Initialize(HWND windowHandle, UINT width, UINT height) {
 
   Log("Renderer adapter: " + renderer_.Context().AdapterDescription());
   Log("Capture output: " + capture_.CurrentOutputName());
+  UpdateWindowMask(windowHandle);
   initialized_ = true;
   return true;
 }
@@ -44,6 +45,7 @@ bool AppController::Tick() {
   const supra::capture::CaptureResult result = capture_.AcquireFrame();
   switch (result.status) {
     case supra::capture::CaptureStatus::FrameAvailable: {
+      UpdateWindowMask(GetActiveWindow());
       const bool renderOk = renderer_.RenderCapturedFrame(result.frame);
       capture_.ReleaseFrame();
       return renderOk;
@@ -67,6 +69,26 @@ void AppController::OnResize(UINT width, UINT height) {
   }
 
   renderer_.Resize(width, height);
+}
+
+void AppController::UpdateWindowMask(HWND windowHandle) {
+  if (windowHandle == nullptr) {
+    renderer_.ClearWindowMask();
+    return;
+  }
+
+  RECT rect{};
+  if (!GetWindowRect(windowHandle, &rect)) {
+    renderer_.ClearWindowMask();
+    return;
+  }
+
+  supra::renderer::NormalizedMaskRect maskRect{};
+  maskRect.left = static_cast<unsigned int>(rect.left);
+  maskRect.top = static_cast<unsigned int>(rect.top);
+  maskRect.right = static_cast<unsigned int>(rect.right);
+  maskRect.bottom = static_cast<unsigned int>(rect.bottom);
+  renderer_.SetWindowMaskRect(maskRect);
 }
 
 std::wstring AppController::LastErrorText() const {

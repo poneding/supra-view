@@ -24,6 +24,7 @@ class AppController {
  private:
   void Log(const std::string& message) const;
   bool RecoverDuplication();
+  void UpdateWindowMask(HWND windowHandle);
 
   supra::renderer::WindowRenderer renderer_;
   supra::capture::DesktopCapture capture_;

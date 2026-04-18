@@ -19,6 +19,8 @@ class WindowRenderer {
   bool Resize(UINT width, UINT height);
   bool RenderCapturedFrame(const supra::capture::CapturedFrame& frame);
   bool RenderLastFrame();
+  void SetWindowMaskRect(const NormalizedMaskRect& rect) noexcept;
+  void ClearWindowMask() noexcept;
 
   [[nodiscard]] ID3D11Device* Device() const noexcept { return context_.Device(); }
   [[nodiscard]] D3DContext& Context() noexcept { return context_; }
@@ -42,6 +44,8 @@ class WindowRenderer {
   bool Resize(unsigned int, unsigned int) { return false; }
   bool RenderCapturedFrame(const supra::capture::CapturedFrame&) { return false; }
   bool RenderLastFrame() { return false; }
+  void SetWindowMaskRect(const NormalizedMaskRect&) noexcept {}
+  void ClearWindowMask() noexcept {}
   [[nodiscard]] void* Device() const noexcept { return nullptr; }
   [[nodiscard]] D3DContext& Context() noexcept { return context_; }
 

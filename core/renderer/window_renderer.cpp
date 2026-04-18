@@ -63,6 +63,14 @@ bool WindowRenderer::RenderLastFrame() {
   return context_.Present();
 }
 
+void WindowRenderer::SetWindowMaskRect(const NormalizedMaskRect& rect) noexcept {
+  pipeline_.SetWindowMaskRect(rect);
+}
+
+void WindowRenderer::ClearWindowMask() noexcept {
+  pipeline_.ClearWindowMask();
+}
+
 }  // namespace supra::renderer
 
 #endif
