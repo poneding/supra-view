@@ -22,12 +22,22 @@ struct RenderConfig {
   ScalingMode scalingMode = ScalingMode::Bicubic;
 };
 
+struct NormalizedMaskRect {
+  SupraUint left = 0;
+  SupraUint top = 0;
+  SupraUint right = 0;
+  SupraUint bottom = 0;
+};
+
 struct alignas(16) DownsampleConstants {
   float sourceSize[2];
   float inverseSourceSize[2];
   float targetSize[2];
   float filterMode = 0.0f;
-  float padding[3] = {0.0f, 0.0f, 0.0f};
+  float maskTopLeft[2] = {0.0f, 0.0f};
+  float maskBottomRight[2] = {0.0f, 0.0f};
+  float maskEnabled = 0.0f;
+  float padding[2] = {0.0f, 0.0f};
 };
 
 static_assert(sizeof(DownsampleConstants) % 16 == 0, "Constant buffer size must be 16-byte aligned.");

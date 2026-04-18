@@ -20,6 +20,8 @@ class TexturePipeline {
   bool Resize(UINT outputWidth, UINT outputHeight);
   bool UpdateSource(const supra::capture::CapturedFrame& frame);
   bool Render(ID3D11RenderTargetView* backBufferRtv, UINT backBufferWidth, UINT backBufferHeight);
+  void SetWindowMaskRect(const NormalizedMaskRect& rect) noexcept;
+  void ClearWindowMask() noexcept;
   bool HasSourceFrame() const noexcept { return hasSourceFrame_; }
   void SetScalingMode(ScalingMode scalingMode) noexcept { scalingMode_ = scalingMode; }
 
@@ -57,6 +59,8 @@ class TexturePipeline {
   DXGI_FORMAT intermediateFormat_ = DXGI_FORMAT_B8G8R8A8_UNORM;
   bool hasSourceFrame_ = false;
   bool lanczosFallbackLogged_ = false;
+  NormalizedMaskRect maskRect_{};
+  bool hasMaskRect_ = false;
 };
 
 }  // namespace supra::renderer
@@ -72,6 +76,8 @@ class TexturePipeline {
   bool Resize(unsigned int, unsigned int) { return false; }
   bool UpdateSource(const supra::capture::CapturedFrame&) { return false; }
   bool Render(void*, unsigned int, unsigned int) { return false; }
+  void SetWindowMaskRect(const NormalizedMaskRect&) noexcept {}
+  void ClearWindowMask() noexcept {}
   bool HasSourceFrame() const noexcept { return false; }
   void SetScalingMode(ScalingMode) noexcept {}
 };

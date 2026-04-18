@@ -118,6 +118,16 @@ bool TexturePipeline::Resize(UINT outputWidth, UINT outputHeight) {
   return true;
 }
 
+void TexturePipeline::SetWindowMaskRect(const NormalizedMaskRect& rect) noexcept {
+  maskRect_ = rect;
+  hasMaskRect_ = true;
+}
+
+void TexturePipeline::ClearWindowMask() noexcept {
+  maskRect_ = NormalizedMaskRect{};
+  hasMaskRect_ = false;
+}
+
 bool TexturePipeline::EnsureSourceResources(const D3D11_TEXTURE2D_DESC& sourceDesc) {
   if (sourceTexture_ != nullptr && sourceWidth_ == sourceDesc.Width && sourceHeight_ == sourceDesc.Height && sourceFormat_ == sourceDesc.Format) {
     return true;
@@ -234,6 +244,15 @@ bool TexturePipeline::ExecutePass(ID3D11ShaderResourceView* sourceSrv, UINT sour
   constants.targetSize[0] = static_cast<float>(targetWidth);
   constants.targetSize[1] = static_cast<float>(targetHeight);
   constants.filterMode = static_cast<float>(scalingMode_ == ScalingMode::Lanczos ? 1 : 0);
+
+  if (hasMaskRect_ && sourceWidth > 0 && sourceHeight > 0) {
+    constants.maskTopLeft[0] = static_cast<float>(maskRect_.left) / static_cast<float>(sourceWidth);
+    constants.maskTopLeft[1] = static_cast<float>(maskRect_.top) / static_cast<float>(sourceHeight);
+    constants.maskBottomRight[0] = static_cast<float>(maskRect_.right) / static_cast<float>(sourceWidth);
+    constants.maskBottomRight[1] = static_cast<float>(maskRect_.bottom) / static_cast<float>(sourceHeight);
+    constants.maskEnabled = 1.0f;
+  }
+
   context_->UpdateSubresource(constantBuffer_.Get(), 0, nullptr, &constants, 0, 0);
 
   const float clearColor[4] = {0.0f, 0.0f, 0.0f, 1.0f};
