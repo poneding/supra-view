@@ -13,7 +13,16 @@ function Fail([string]$Message) {
     exit 1
 }
 
-if (-not $IsWindows) {
+function Test-IsWindows {
+    $isWindowsVariable = Get-Variable -Name IsWindows -ErrorAction SilentlyContinue
+    if ($null -ne $isWindowsVariable) {
+        return [bool]$isWindowsVariable.Value
+    }
+
+    return [System.Environment]::OSVersion.Platform -eq [System.PlatformID]::Win32NT
+}
+
+if (-not (Test-IsWindows)) {
     Fail 'This run script only supports Windows because supra_view is a native Win32 and Direct3D 11 application.'
 }
 

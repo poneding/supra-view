@@ -86,7 +86,7 @@ docs/
 ## Build Requirements
 
 - Windows 10 or Windows 11
-- Visual Studio 2022 or Build Tools with MSVC
+- Visual Studio 2022, Visual Studio 2026, or Build Tools with MSVC
 - Windows SDK with D3D11, DXGI, and D3DCompiler
 - CMake 3.20 or newer
 
@@ -115,6 +115,13 @@ Manual CMake workflow:
 
 ```powershell
 cmake -S . -B build -G "Visual Studio 17 2022" -A x64
+cmake --build build --config Release
+```
+
+If you are using Visual Studio 2026 instead, switch the generator name:
+
+```powershell
+cmake -S . -B build -G "Visual Studio 18 2026" -A x64
 cmake --build build --config Release
 ```
 
@@ -169,6 +176,9 @@ Expected first-run behavior:
 - PowerShell blocks the script
   - Start PowerShell with a policy that allows local scripts for your user, for example:
     `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned`
+- Visual Studio 2026 is installed but the build directory was previously configured for Visual Studio 2022
+  - Remove `build`, or use a fresh directory such as:
+    `powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\build.ps1 -BuildDir build-vs2026`
 - `build.bat` or `run.bat` fails immediately
   - The batch wrappers forward to PowerShell. Ensure `powershell.exe` is available and that your Windows installation has not disabled it.
 
