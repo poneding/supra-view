@@ -1,6 +1,3 @@
-Set-StrictMode -Version Latest
-$ErrorActionPreference = 'Stop'
-
 param(
     [ValidateSet('Debug', 'Release', 'RelWithDebInfo', 'MinSizeRel')]
     [string]$Configuration = 'Release',
@@ -12,6 +9,9 @@ param(
     [ValidateSet('x64', 'Win32', 'ARM64')]
     [string]$Architecture = 'x64'
 )
+
+Set-StrictMode -Version Latest
+$ErrorActionPreference = 'Stop'
 
 function Fail([string]$Message) {
     Write-Error $Message
