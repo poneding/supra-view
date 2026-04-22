@@ -23,7 +23,9 @@ class D3DContext {
 
   [[nodiscard]] ID3D11Device* Device() const noexcept { return device_.Get(); }
   [[nodiscard]] ID3D11DeviceContext* Context() const noexcept { return context_.Get(); }
+  [[nodiscard]] ID3D11Texture2D* BackBuffer() const noexcept { return backBuffer_.Get(); }
   [[nodiscard]] ID3D11RenderTargetView* BackBufferRtv() const noexcept { return backBufferRtv_.Get(); }
+  [[nodiscard]] DXGI_FORMAT BackBufferFormat() const noexcept { return backBufferFormat_; }
   [[nodiscard]] UINT Width() const noexcept { return width_; }
   [[nodiscard]] UINT Height() const noexcept { return height_; }
   [[nodiscard]] std::string AdapterDescription() const;
@@ -44,6 +46,7 @@ class D3DContext {
   Microsoft::WRL::ComPtr<IDXGISwapChain> swapChain_;
   Microsoft::WRL::ComPtr<ID3D11Texture2D> backBuffer_;
   Microsoft::WRL::ComPtr<ID3D11RenderTargetView> backBufferRtv_;
+  DXGI_FORMAT backBufferFormat_ = DXGI_FORMAT_UNKNOWN;
 };
 
 }  // namespace supra::renderer
@@ -65,7 +68,9 @@ class D3DContext {
   bool Present() { return false; }
   [[nodiscard]] void* Device() const noexcept { return nullptr; }
   [[nodiscard]] void* Context() const noexcept { return nullptr; }
+  [[nodiscard]] void* BackBuffer() const noexcept { return nullptr; }
   [[nodiscard]] void* BackBufferRtv() const noexcept { return nullptr; }
+  [[nodiscard]] unsigned int BackBufferFormat() const noexcept { return 0; }
   [[nodiscard]] unsigned int Width() const noexcept { return width_; }
   [[nodiscard]] unsigned int Height() const noexcept { return height_; }
   [[nodiscard]] std::string AdapterDescription() const { return {}; }

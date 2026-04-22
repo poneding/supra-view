@@ -43,6 +43,7 @@ void D3DContext::Shutdown() {
   windowHandle_ = nullptr;
   width_ = 0;
   height_ = 0;
+  backBufferFormat_ = DXGI_FORMAT_UNKNOWN;
 }
 
 bool D3DContext::SelectAdapter() {
@@ -119,11 +120,16 @@ bool D3DContext::CreateDeviceAndSwapChain() {
 bool D3DContext::CreateBackBufferResources() {
   backBufferRtv_.Reset();
   backBuffer_.Reset();
+  backBufferFormat_ = DXGI_FORMAT_UNKNOWN;
 
   HRESULT hr = swapChain_->GetBuffer(0, __uuidof(ID3D11Texture2D), reinterpret_cast<void**>(backBuffer_.ReleaseAndGetAddressOf()));
   if (FAILED(hr)) {
     return false;
   }
+
+  D3D11_TEXTURE2D_DESC backBufferDesc{};
+  backBuffer_->GetDesc(&backBufferDesc);
+  backBufferFormat_ = backBufferDesc.Format;
 
   hr = device_->CreateRenderTargetView(backBuffer_.Get(), nullptr, &backBufferRtv_);
   if (FAILED(hr)) {
