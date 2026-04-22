@@ -1,97 +1,80 @@
 # Supra View
 
-Supra View is a Windows-only local rendering pipeline that captures the desktop with DXGI Desktop Duplication, copies the captured framebuffer into a GPU-owned texture, downsamples it with a Direct3D 11 bicubic shader, and displays the processed image in a native Win32 window.
+Supra View V2 Phase 1 is a Windows-native application shell for one application-owned interactive workspace. The default product path on this branch is a single Win32 window that owns its own workspace surface, maps pointer and keyboard input directly into that surface, and supports standard windowed and borderless fullscreen presentation.
 
-## Goals
+The repository still contains the earlier V1 Desktop Duplication viewer pipeline under `core/capture` and the older app controller path. That capture-first flow is now historical or auxiliary code, not the main user-facing story for this worktree.
 
-- Simulate a high-resolution rendering path similar to a remote-rendering or supersampled viewer.
-- Capture the desktop on the GPU with minimal CPU involvement.
-- Downsample on the GPU with a high-quality shader.
-- Present the processed result in a 2K-class output window.
+## V2 Phase 1 product direction
 
-## Architecture
+- One native Win32 shell window.
+- One application-owned interactive workspace surface.
+- Pointer and keyboard input mapped from window-client coordinates into logical workspace coordinates.
+- Borderless fullscreen toggled with `F11`, restored with `F11` or `Esc`.
+- No mirrored desktop window and no second desktop shell.
 
-The project is split into the required modules:
+### What the default path does today
 
-- `core/capture`
-  - Owns DXGI Desktop Duplication setup and per-frame capture.
-  - Uses the renderer-owned D3D11 device so capture and rendering stay on the same adapter.
-- `core/renderer`
-  - Owns the D3D11 device, immediate context, swap chain, GPU texture pipeline, and presentation.
-  - Copies the duplication surface into a shader-readable texture before releasing the acquired frame.
-- `core/shader`
-  - Owns embedded HLSL source and shader compilation helpers.
-  - Provides a bicubic downsampling shader and a Lanczos-ready interface.
-- `app`
-  - Owns the Win32 window, application controller, and main loop.
+- `app/main.cpp` launches `V2AppController` as the default executable path.
+- `app/window.*` owns the native window, message pump, resize notifications, and borderless fullscreen shell behavior.
+- `core/input/*` defines input events and maps the window input surface into logical workspace coordinates.
+- `core/session/*` and `core/renderer/*` hold the current V2 workspace-state and placeholder-rendering groundwork.
+- Windows remains the only supported runtime target.
 
-### Frame Pipeline
+### What V2 Phase 1 does not claim yet
 
-```text
-Desktop output
-  -> IDXGIOutputDuplication::AcquireNextFrame
-  -> captured ID3D11Texture2D
-  -> GPU copy into shader-readable source texture
-  -> bicubic fullscreen pixel shader pass
-  -> intermediate render target
-  -> copy pass to swap-chain backbuffer
-  -> Present
-```
+- Arbitrary Windows desktop application hosting inside the workspace.
+- Multi-window or multi-workspace composition.
+- Multi-monitor workspace management.
+- A remote desktop or mirrored-desktop product identity.
 
-### Why the project uses one D3D11 device
+## Historical V1 capture path
 
-Desktop Duplication requires `IDXGIOutput1::DuplicateOutput` to receive a device created from the same adapter that owns the target output. To avoid cross-adapter mistakes and extra synchronization, Supra View creates one D3D11 device on the selected adapter and shares it across capture and rendering.
+The repository still keeps the original Desktop Duplication capture and bicubic downsampling pipeline for reference and auxiliary development work. That path is not the default product flow for this branch.
 
-### Initial scope
+- `core/capture/*` owns DXGI Desktop Duplication setup and per-frame desktop acquisition.
+- `app/app_controller.*` is the earlier controller that wires capture into the legacy renderer path.
+- `core/renderer/window_renderer.*` and related legacy shader helpers support that older viewer flow.
 
-- Windows 10/11, D3D11, DXGI 1.2 Desktop Duplication
-- Single output capture
-- Bicubic downsampling as the first production filter
-- Lanczos kept as a public scaling mode for a later implementation
-- Single-threaded main loop for the first working demo
+If you are reading this repository to understand current product intent, start with the V2 path above, not the retained V1 capture viewer.
 
-### Current limitations
-
-- Windows only
-- No multi-monitor stitching
-- No HDR-specific handling
-- No input forwarding or remote control features
-- Lanczos is interface-ready but currently falls back to bicubic with a debug log
-- On a single monitor, the application masks its own window region in the processed output to avoid recursive hall-of-mirrors nesting
-
-## Repository Layout
+## Repository layout
 
 ```text
+app/
+  main.cpp
+  v2_app_controller.*
+  window.*
+  app_controller.*
 core/
   capture/
+  input/
+  session/
   renderer/
   shader/
-app/
 docs/
   superpowers/
     specs/
     plans/
 ```
 
-## Validation Matrix
+## Validation matrix
 
 | Validation | macOS host | Windows host |
 |---|---|---|
 | Repository structure and documentation | Yes | Yes |
-| CMake intent and source layout review | Yes | Yes |
-| DirectX compile/link verification | No | Yes |
-| Desktop Duplication runtime | No | Yes |
-| Shader compilation and presentation | No | Yes |
-| Resize and access-loss recovery | No | Yes |
+| V2 shell source layout and input-mapping review | Yes | Yes |
+| Win32 and D3D11 compile or link verification | No | Yes |
+| Default V2 shell runtime behavior | No | Yes |
+| Historical V1 Desktop Duplication runtime | No | Yes |
 
-## Build Requirements
+## Build requirements
 
 - Windows 10 or Windows 11
 - Visual Studio 2022, Visual Studio 2026, or Build Tools with MSVC
 - Windows SDK with D3D11, DXGI, and D3DCompiler
 - CMake 3.20 or newer
 
-## Build Instructions
+## Build instructions
 
 Preferred scripted workflow:
 
@@ -126,7 +109,7 @@ cmake -S . -B build -G "Visual Studio 18 2026" -A x64
 cmake --build build --config Release
 ```
 
-## Run Instructions
+## Run instructions
 
 Preferred scripted workflow:
 
@@ -152,25 +135,29 @@ Manual launch:
 build\Release\supra_view.exe
 ```
 
-Expected first-run behavior:
+### Expected current V2 Phase 1 behavior
 
 - A native Win32 window opens.
-- The application captures the selected desktop output.
-- The captured frame is copied into a GPU-owned texture.
-- The bicubic shader downsamples the source to the current output size.
-- The processed image is presented into the window.
-- On a single monitor, the application window area appears as a dark masked region instead of recursively capturing itself.
+- The process initializes the V2 shell controller for one application-owned workspace surface.
+- Pointer and keyboard input are interpreted against the current window-client bounds and logical workspace mapping.
+- Resizing the window updates the active presentation bounds and input mapping.
+- Press `F11` to enter or leave borderless fullscreen on the active monitor.
+- Press `Esc` to restore the standard windowed mode when borderless fullscreen is active.
+
+The default executable on this branch does not start the old Desktop Duplication viewer path.
+
+## Current limitations
+
+- Windows only.
+- One shell window and one workspace surface.
+- The default executable establishes the V2 shell, input, and presentation model. It does not yet claim arbitrary hosted Windows applications inside the workspace.
+- Workspace session and placeholder-rendering groundwork exist in the repository, but the branch is still in the Phase 1 application-owned workspace transition.
+- Legacy capture code remains in the tree for historical or auxiliary use, not as the default product flow.
 
 ## Troubleshooting
 
-- `DuplicateOutput` fails immediately
-  - Ensure the device and output come from the same adapter.
-  - Ensure the process is running in a normal interactive desktop session.
-- `DXGI_ERROR_ACCESS_LOST`
-  - The desktop mode changed or the output was invalidated. The application will attempt to recreate duplication.
-- Black or stale output
-  - Check shader compile errors in the debugger output.
-  - Check that the output index exists on the selected adapter.
+- `F11` or `Esc` has no visible effect
+  - Ensure the Supra View window has input focus. The shell shortcut path is handled through the active V2 window.
 - Build fails on a non-Windows host
   - This is expected. The CMake project intentionally stops outside Windows because the runtime depends on Win32 and DirectX 11.
 - `scripts\build.ps1` says CMake was not found
@@ -184,8 +171,21 @@ Expected first-run behavior:
 - `build.bat` or `run.bat` fails immediately
   - The batch wrappers forward to PowerShell. Ensure `powershell.exe` is available and that your Windows installation has not disabled it.
 
-## Future Work
+### Historical V1 capture troubleshooting
 
-- Implement a real Lanczos filter path.
-- Add output-selection UI and diagnostics overlay.
-- Improve recovery behavior across output changes and secure desktop transitions.
+These notes apply only if you are inspecting or reviving the retained Desktop Duplication path.
+
+- `DuplicateOutput` fails immediately
+  - Ensure the device and output come from the same adapter.
+  - Ensure the process is running in a normal interactive desktop session.
+- `DXGI_ERROR_ACCESS_LOST`
+  - The desktop mode changed or the output was invalidated. The capture path must recreate duplication.
+- Black or stale output
+  - Check shader compile errors in the debugger output.
+  - Check that the output index exists on the selected adapter.
+
+## Future work
+
+- Continue wiring the V2 workspace session and renderer into a fuller default application path.
+- Replace placeholder workspace content with richer application-owned workspace behavior.
+- Decide the long-term disposition of the retained V1 capture modules.

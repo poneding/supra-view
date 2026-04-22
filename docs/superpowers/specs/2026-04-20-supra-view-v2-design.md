@@ -1,180 +1,119 @@
-# Supra View V2 Design
+# Supra View V2 Phase 1 Design
 
 ## Objective
 
-Redesign Supra View from a desktop-capture viewer into a local interactive supersampled rendering environment that can later evolve into a virtual-display-backed system. V2 must stop treating desktop duplication as the product architecture and instead treat it, at most, as a diagnostic side path.
+Supra View V2 Phase 1 defines the repository's default product direction as a Windows-native application-owned workspace, not as a mirrored-desktop viewer. The default user-facing path is one native Win32 window that owns its own workspace surface, accepts direct pointer and keyboard input, and supports standard windowed and borderless fullscreen presentation.
 
-## Why V1 Is Not the Product Target
+This direction replaces the old V1 capture-viewer story as the top-level identity for the worktree. The retained Desktop Duplication path remains available only as historical or auxiliary code.
 
-V1 duplicates the already composed Windows desktop, downsamples it on the GPU, and presents that processed image into a normal Win32 window. That is sufficient for proving a capture-plus-shader pipeline, but it cannot become a VMware-like local rendering environment because:
+## Current default runtime path
 
-- it mirrors an existing desktop rather than owning a separate interactive rendering space;
-- it structurally suffers from self-reference on a single monitor;
-- it cannot provide an environment that the user can directly "enter" and interact with as a first-class workspace;
-- hiding the viewer window from capture does not create a virtual display, compositor, or alternate desktop target.
+The current executable entry point is `app/main.cpp`, which constructs `supra::app::Window` and initializes `supra::app::V2AppController`.
 
-V2 therefore changes the product definition rather than iterating further on the V1 viewer architecture.
+That default path currently establishes these user-facing behaviors:
 
-## Selected V2 Strategy
+- One native Win32 shell window.
+- Direct input routing from window-client coordinates into logical workspace coordinates.
+- Resize handling tied to the active window-client area.
+- Borderless fullscreen entry and exit with `F11`, plus `Esc` restore.
+- A product model centered on one application-owned workspace surface.
 
-Supra View V2 uses a phased design.
+## Scope boundaries for Phase 1
 
-### Phase 1: Interactive supersampled workspace
+Phase 1 is intentionally narrower than a full application-hosting environment.
 
-Build a Windows-native application that owns its own high-resolution rendering space, receives user input directly, and presents a downsampled result to the real monitor. This phase does not attempt to impersonate the full Windows desktop and does not depend on Desktop Duplication.
+### In scope
 
-### Phase 2: Virtual display / IDD expansion
+- One window.
+- One application-owned interactive workspace surface.
+- Direct shell-level pointer and keyboard handling.
+- Logical-workspace input mapping.
+- Borderless fullscreen presentation behavior.
+- Repository groundwork for workspace state and placeholder rendering.
 
-Extend the Phase 1 architecture toward a true virtual-display-backed system using a Windows virtual display strategy such as an Indirect Display Driver (IDD) or an equivalent virtual presentation backend. This phase aims to make the rendering environment feel closer to a separate monitor or remoted desktop target.
+### Out of scope for the current Phase 1 story
 
-This phased strategy was selected because it solves the user's immediate requirement for a directly interactive supersampled environment without forcing the first milestone into driver-level complexity.
+- Arbitrary Windows desktop application hosting inside the workspace.
+- Multi-window or multi-workspace composition.
+- Multi-monitor workspace management.
+- A remote desktop product.
+- A mirrored-desktop viewer as the default path.
 
-## Product Definition for Phase 1
-
-Phase 1 is not a desktop mirror. It is a standalone interactive rendering environment with these properties:
-
-- it owns a virtual workspace with a high internal rendering resolution, such as 3840x2160;
-- it downsamples the final image to the actual output presentation resolution, such as 2560x1440;
-- it accepts keyboard and mouse input directly and maps physical input coordinates into the virtual workspace;
-- it supports fullscreen or borderless fullscreen presentation;
-- it has no recursive hall-of-mirrors capture behavior because it no longer captures the host desktop as its primary content source.
-
-## Phase 1 Architecture
-
-### Core system model
-
-```text
-Input events
-  -> workspace/session state
-  -> high-resolution offscreen render target
-  -> GPU downsample pass
-  -> native presentation surface
-  -> screen
-```
-
-This data flow is the key architectural correction. The source of pixels is the workspace owned by Supra View itself, not the already composed host desktop.
-
-## Module Boundaries
-
-### `core/session`
-
-- Own the virtual workspace lifecycle.
-- Define the internal render resolution and logical workspace dimensions.
-- Hold scene or workspace state.
-- Expose update and render contracts to the renderer.
-
-### `core/renderer`
-
-- Create the high-resolution offscreen render target.
-- Own the graphics device, command submission path, and presentation backend.
-- Dispatch downsample passes.
-- Support windowed and borderless fullscreen presentation.
-
-### `core/shader`
-
-- Provide downsampling filters such as bicubic first and Lanczos later.
-- Provide optional sharpen or debug overlay passes.
-- Keep filter and presentation parameters isolated from session logic.
-
-### `core/input`
-
-- Translate physical mouse coordinates to virtual workspace coordinates.
-- Manage keyboard and pointer routing.
-- Provide hit-testing and focus abstractions that are independent from presentation resolution.
+## Module roles
 
 ### `app`
 
-- Own the Win32 application shell.
-- Manage the main loop, window mode changes, and lifecycle.
-- Wire together session, renderer, shader, and input components.
+- `main.cpp` selects the V2 path as the default executable behavior.
+- `v2_app_controller.*` owns shell-level input handling, logical workspace mapping, and fullscreen shortcuts.
+- `window.*` owns the native Win32 window, message loop, resize callbacks, input event forwarding, and borderless fullscreen shell transitions.
+- `app_controller.*` remains in the tree as the older V1 capture-oriented controller.
 
-## Phase 1 Interaction Model
+### `core/input`
 
-The user interacts with the virtual workspace directly. Supra View receives native input events and remaps them into the logical high-resolution workspace. This makes the environment feel like a supersampled local rendering target rather than a passive video surface.
+- Defines input events, pointer state, keyboard state, and mapping from input-surface coordinates into logical workspace coordinates.
+- Supports the V2 requirement that input stays bound to the application-owned workspace surface rather than a mirrored desktop image.
 
-Minimum interaction requirements:
+### `core/session`
 
-- mouse move, click, drag, and hover support;
-- keyboard input routing;
-- borderless fullscreen mode;
-- a clean exit path and mode switching;
-- an optional debug overlay showing internal resolution, output resolution, and filter mode.
+- Holds the current workspace session and workspace state models.
+- Tracks logical and presentation resolutions, debug metadata, and placeholder panel visibility.
+- Represents current V2 groundwork for workspace-owned content rather than a desktop capture feed.
 
-## Phase 1 Content Model
+### `core/renderer`
 
-Phase 1 must own its content model explicitly. It does not inherit content by capturing the host desktop. The initial content scope should therefore be constrained to content that Supra View itself can render and manage. This may include:
+- Contains the D3D11 context and workspace rendering groundwork for the V2 direction.
+- Includes a placeholder-scene path, logical and presentation render targets, and a downsample pass.
+- Also retains `window_renderer.*`, which belongs to the older capture-viewer path.
 
-- a custom rendered workspace or scene;
-- a UI shell or demonstrator surface;
-- synthetic or application-managed panels used to validate interaction and scaling behavior.
+### `core/shader`
 
-This is a deliberate scope choice that keeps Phase 1 honest. Arbitrary existing Windows desktop applications are out of scope for the first milestone unless a separate hosting model is introduced deliberately.
+- Provides shared shader infrastructure.
+- Holds both legacy full-screen capture-viewer shader sources and V2 workspace downsample shader sources.
 
-## Phase 2 Direction: Virtual Display Expansion
+### `core/capture`
 
-Once the Phase 1 core is stable, the architecture can evolve toward a virtual display backend.
+- Retains the DXGI Desktop Duplication implementation from V1.
+- Is historical or auxiliary relative to the Phase 1 product story.
+- Is not the default user-facing entry path for this worktree.
 
-### What stays stable
+## Interaction model
 
-- `core/session`
-- `core/input`
-- `core/shader`
-- most high-resolution render and downsample logic in `core/renderer`
+The Phase 1 interaction model is direct and local.
 
-### What changes
+- The user interacts with one native window.
+- Pointer events arrive in window-client coordinates, then the V2 controller remaps them into logical workspace coordinates.
+- Keyboard events are handled by the same shell path, including fullscreen shortcuts.
+- Borderless fullscreen changes shell chrome and presentation bounds, but it does not create a second workspace or a separate desktop shell.
 
-- presentation moves from a simple app-controlled window shell toward a virtual display or equivalent backend;
-- the system gains a virtual display abstraction layer, likely under `platform/display` or `core/display`;
-- installation, device management, and system integration complexity increase significantly.
+## Product honesty requirements
 
-### What Phase 2 is expected to unlock
+Documentation for this branch must make these points clear:
 
-- a rendering target that behaves more like a separate display or remote-rendered workspace;
-- a product experience closer to the original VMware-like expectation;
-- removal of the conceptual mismatch between a host-window viewer and an independent working environment.
+- V2 Phase 1 is the default product story.
+- The old Desktop Duplication viewer is retained code, not the main identity.
+- Current V2 work establishes shell, input, and workspace-direction foundations.
+- The repository does not yet claim arbitrary Windows desktop app hosting inside the Phase 1 workspace.
 
-## Risks and Trade-Offs
+## Validation strategy
 
-### Phase 1 trade-off
+### Possible on the current macOS host
 
-Phase 1 solves the interaction and supersampling problem but does not yet create a system-visible virtual monitor. This is intentional. It provides a usable milestone while preserving the path to a more ambitious system-level design.
+- Verify repository structure.
+- Verify that README and spec language match the current V2 entry path.
+- Review source-level consistency between `app/main.cpp`, `app/v2_app_controller.*`, `core/input/*`, and supporting workspace modules.
 
-### Phase 2 trade-off
+### Requires Windows
 
-Virtual display work is significantly more complex. It involves system integration, installation friction, and a deeper Windows display-stack understanding. It should only begin after the core workspace, input mapping, and rendering model are stable.
+- Build and link the Win32 and D3D11 application.
+- Verify default shell startup.
+- Verify focus-sensitive input handling.
+- Verify borderless fullscreen transitions with `F11` and `Esc`.
+- Verify any future integration between workspace session, renderer, and the default executable path.
 
-### Non-goal clarification
+## Acceptance criteria
 
-V2 Phase 1 is not a stealth continuation of the V1 viewer. Desktop Duplication is no longer the architectural center of the product. Any viewer or capture path retained from V1 should be documented as auxiliary tooling only.
-
-## Verification Strategy
-
-### Phase 1 verification
-
-- verify that rendering originates from an application-owned offscreen workspace rather than from Desktop Duplication;
-- verify coordinate mapping between physical output and logical workspace;
-- verify borderless fullscreen interaction;
-- verify that no recursive self-capture behavior exists because no desktop mirror path is used for the main product loop.
-
-### Phase 2 verification
-
-- verify virtual display creation and lifecycle;
-- verify that the virtual target can be presented and interacted with as a distinct environment;
-- verify stability across display-mode changes and multi-display configurations.
-
-## Acceptance Criteria
-
-### V2 Phase 1
-
-- Supra View no longer depends on Desktop Duplication for the main user-facing path.
-- Supra View owns a high-resolution interactive workspace.
-- User input is mapped correctly into that workspace.
-- The final image is downsampled on the GPU before presentation.
-- The app supports fullscreen or borderless fullscreen interaction.
-- Recursive hall-of-mirrors behavior is absent by architecture, not by masking hacks.
-
-### V2 Phase 2
-
-- Supra View can target a virtual display or equivalent system-level display path.
-- The environment behaves like a distinct workspace rather than a viewer window.
-- The system architecture matches the original VMware-like product expectation more closely than V1 ever could.
+- Repository documentation leads with V2 Phase 1 as the default path.
+- Documentation describes one application-owned interactive workspace in one native window.
+- Documentation does not present the legacy Desktop Duplication viewer as the product identity.
+- Documentation does not imply arbitrary Windows desktop application hosting already exists in Phase 1.
+- Retained `core/capture` code is described as historical or auxiliary when referenced.

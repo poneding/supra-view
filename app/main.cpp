@@ -1,10 +1,10 @@
-#include "app_controller.h"
-#include "window.h"
-
 #ifdef _WIN32
 
 #include <windows.h>
 #include <cstdint>
+
+#include "v2_app_controller.h"
+#include "window.h"
 
 int WINAPI wWinMain(HINSTANCE, HINSTANCE, PWSTR, int) {
   if (FAILED(CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED))) {
@@ -21,9 +21,19 @@ int WINAPI wWinMain(HINSTANCE, HINSTANCE, PWSTR, int) {
     return -1;
   }
 
-  supra::app::AppController controller;
+  supra::app::V2AppController controller;
   window.SetResizeCallback([&controller](std::uint32_t width, std::uint32_t height) {
     controller.OnResize(width, height);
+  });
+  window.SetMouseMoveCallback([&controller](const supra::input::MouseMoveEvent& mouseMoveEvent) {
+    controller.OnMouseMove(mouseMoveEvent);
+  });
+  window.SetMouseButtonCallback(
+      [&controller](const supra::input::MouseButtonEvent& mouseButtonEvent) {
+        controller.OnMouseButton(mouseButtonEvent);
+      });
+  window.SetKeyboardCallback([&controller](const supra::input::KeyboardEvent& keyboardEvent) {
+    controller.OnKeyboard(keyboardEvent);
   });
 
   if (!controller.Initialize(window.Handle(), window.ClientWidth(), window.ClientHeight())) {
