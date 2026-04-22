@@ -2,6 +2,8 @@
 
 #ifdef _WIN32
 
+#include <windowsx.h>
+
 namespace supra::app {
 
 namespace {

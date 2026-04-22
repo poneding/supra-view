@@ -5,12 +5,12 @@
 #include <array>
 #include <cstddef>
 
-namespace supra::renderer {
-
 #ifdef _WIN32
-struct ID3D11DeviceContext1;
-struct ID3D11RenderTargetView;
+#include <d3d11.h>
+#include <d3d11_1.h>
 #endif
+
+namespace supra::renderer {
 
 struct PlaceholderRect {
   float left = 0.0f;
