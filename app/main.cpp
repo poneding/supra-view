@@ -1,6 +1,7 @@
 #ifdef _WIN32
 
 #include <windows.h>
+#include <objbase.h>
 #include <cstdint>
 
 #include "v2_app_controller.h"
