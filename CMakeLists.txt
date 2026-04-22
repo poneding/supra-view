@@ -23,6 +23,7 @@ if(WIN32)
     core/session/workspace_session.cpp
     core/session/workspace_state.cpp
     app/window.cpp
+    core/capture/capture_utils.cpp
     core/renderer/d3d_context.cpp
     core/renderer/texture_pipeline.cpp
     core/renderer/workspace_downsample_pass.cpp
